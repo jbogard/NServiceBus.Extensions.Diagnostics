@@ -7,15 +7,19 @@ namespace NServiceBus.Extensions.Diagnostics
 {
     public class OutgoingLogicalMessageDiagnostics : Behavior<IOutgoingLogicalMessageContext>
     {
-        private static readonly DiagnosticSource _diagnosticListener = new DiagnosticListener(ActivityNames.OutgoingLogicalMessage);
+        private readonly DiagnosticListener _diagnosticListener;
+        private const string EventName = ActivityNames.OutgoingLogicalMessage + ".Sent";
+
+        public OutgoingLogicalMessageDiagnostics(DiagnosticListener diagnosticListener)
+            => _diagnosticListener = diagnosticListener;
 
         public override async Task Invoke(IOutgoingLogicalMessageContext context, Func<Task> next)
         {
             await next().ConfigureAwait(false);
 
-            if (_diagnosticListener.IsEnabled("Sent"))
+            if (_diagnosticListener.IsEnabled(EventName))
             {
-                _diagnosticListener.Write("Sent", context);
+                _diagnosticListener.Write(EventName, context);
             }
         }
     }

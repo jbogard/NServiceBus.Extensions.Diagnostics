@@ -7,15 +7,19 @@ namespace NServiceBus.Extensions.Diagnostics
 {
     public class IncomingLogicalMessageDiagnostics : Behavior<IIncomingLogicalMessageContext>
     {
-        private static readonly DiagnosticSource _diagnosticListener = new DiagnosticListener(ActivityNames.IncomingLogicalMessage);
+        private readonly DiagnosticListener _diagnosticListener;
+        private const string EventName = ActivityNames.IncomingLogicalMessage + ".Processed";
+
+        public IncomingLogicalMessageDiagnostics(DiagnosticListener diagnosticListener)
+            => _diagnosticListener = diagnosticListener;
 
         public override async Task Invoke(IIncomingLogicalMessageContext context, Func<Task> next)
         {
             await next().ConfigureAwait(false);
 
-            if (_diagnosticListener.IsEnabled("Processed"))
+            if (_diagnosticListener.IsEnabled(EventName))
             {
-                _diagnosticListener.Write("Processed", context);
+                _diagnosticListener.Write(EventName, context);
             }
         }
     }
