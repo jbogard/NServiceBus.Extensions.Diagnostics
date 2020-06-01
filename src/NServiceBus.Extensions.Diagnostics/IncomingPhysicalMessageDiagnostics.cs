@@ -10,7 +10,14 @@ namespace NServiceBus.Extensions.Diagnostics
 {
     public class IncomingPhysicalMessageDiagnostics : Behavior<IIncomingPhysicalMessageContext>
     {
-        private static readonly DiagnosticSource _diagnosticListener = new DiagnosticListener(ActivityNames.IncomingPhysicalMessage);
+        private readonly DiagnosticListener _diagnosticListener;
+
+        //private static readonly DiagnosticSource _diagnosticListener = new DiagnosticListener(ActivityNames.IncomingPhysicalMessage);
+        private const string StartActivityName = ActivityNames.IncomingPhysicalMessage + ".Start";
+        private const string StopActivityName = ActivityNames.IncomingPhysicalMessage + ".Stop";
+
+        public IncomingPhysicalMessageDiagnostics(DiagnosticListener diagnosticListener) 
+            => _diagnosticListener = diagnosticListener;
 
         public override async Task Invoke(
             IIncomingPhysicalMessageContext context,
@@ -28,7 +35,7 @@ namespace NServiceBus.Extensions.Diagnostics
             }
         }
 
-        private static Activity StartActivity(IIncomingPhysicalMessageContext context)
+        private Activity StartActivity(IIncomingPhysicalMessageContext context)
         {
             var activity = new Activity(ActivityNames.IncomingPhysicalMessage);
 
@@ -40,6 +47,7 @@ namespace NServiceBus.Extensions.Diagnostics
             if (!string.IsNullOrEmpty(requestId))
             {
                 activity.SetParentId(requestId);
+
                 if (context.MessageHeaders.TryGetValue(Headers.TraceStateHeaderName, out var traceState))
                 {
                     activity.TraceStateString = traceState;
@@ -68,7 +76,7 @@ namespace NServiceBus.Extensions.Diagnostics
 
             _diagnosticListener.OnActivityImport(activity, context);
 
-            if (_diagnosticListener.IsEnabled("Start", context))
+            if (_diagnosticListener.IsEnabled(StartActivityName, context))
             {
                 _diagnosticListener.StartActivity(activity, context);
             }
@@ -80,9 +88,16 @@ namespace NServiceBus.Extensions.Diagnostics
             return activity;
         }
 
-        private static void StopActivity(Activity activity, IIncomingPhysicalMessageContext context)
+        private void StopActivity(Activity activity, IIncomingPhysicalMessageContext context)
         {
-            _diagnosticListener.StopActivity(activity, context);
+            if (_diagnosticListener.IsEnabled(StopActivityName, context))
+            {
+                _diagnosticListener.StopActivity(activity, context);
+            }
+            else
+            {
+                activity.Stop();
+            }
         }
     }
 }

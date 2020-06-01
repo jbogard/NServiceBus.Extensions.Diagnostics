@@ -4,7 +4,7 @@
     {
         public const string TraceParentHeaderName = "traceparent";
         public const string TraceStateHeaderName = "tracestate";
-        public const string CorrelationContextHeaderName = "correlation-context";
+        public const string CorrelationContextHeaderName = "Correlation-Context";
         public const string RequestIdHeaderName = "Request-Id";
     }
 }

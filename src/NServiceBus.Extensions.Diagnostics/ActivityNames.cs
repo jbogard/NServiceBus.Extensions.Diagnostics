@@ -1,6 +1,6 @@
 ﻿namespace NServiceBus.Extensions.Diagnostics
 {
-    internal static class ActivityNames
+    public static class ActivityNames
     {
         public const string IncomingPhysicalMessage = "NServiceBus.Extensions.Diagnostics.IncomingPhysicalMessage";
         public const string OutgoingPhysicalMessage = "NServiceBus.Extensions.Diagnostics.OutgoingPhysicalMessage";
