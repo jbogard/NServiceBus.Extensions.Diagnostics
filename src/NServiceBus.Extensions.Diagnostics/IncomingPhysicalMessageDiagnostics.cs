@@ -12,7 +12,6 @@ namespace NServiceBus.Extensions.Diagnostics
     {
         private readonly DiagnosticListener _diagnosticListener;
 
-        //private static readonly DiagnosticSource _diagnosticListener = new DiagnosticListener(ActivityNames.IncomingPhysicalMessage);
         private const string StartActivityName = ActivityNames.IncomingPhysicalMessage + ".Start";
         private const string StopActivityName = ActivityNames.IncomingPhysicalMessage + ".Stop";
 

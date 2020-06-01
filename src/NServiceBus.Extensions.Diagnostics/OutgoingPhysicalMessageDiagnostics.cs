@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using NServiceBus.Pipeline;
 
@@ -8,7 +9,13 @@ namespace NServiceBus.Extensions.Diagnostics
 {
     public class OutgoingPhysicalMessageDiagnostics : Behavior<IOutgoingPhysicalMessageContext>
     {
-        private static readonly DiagnosticSource _diagnosticListener = new DiagnosticListener(ActivityNames.OutgoingPhysicalMessage);
+        private readonly DiagnosticListener _diagnosticListener;
+
+        private const string StartActivityName = ActivityNames.OutgoingPhysicalMessage + ".Start";
+        private const string StopActivityName = ActivityNames.OutgoingPhysicalMessage + ".Stop";
+
+        public OutgoingPhysicalMessageDiagnostics(DiagnosticListener diagnosticListener)
+            => _diagnosticListener = diagnosticListener;
 
         public override async Task Invoke(IOutgoingPhysicalMessageContext context, Func<Task> next)
         {
@@ -26,13 +33,13 @@ namespace NServiceBus.Extensions.Diagnostics
             }
         }
 
-        private static Activity StartActivity(IOutgoingPhysicalMessageContext context)
+        private Activity StartActivity(IOutgoingPhysicalMessageContext context)
         {
             var activity = new Activity(ActivityNames.OutgoingPhysicalMessage);
 
             _diagnosticListener.OnActivityImport(activity, context);
 
-            if (_diagnosticListener.IsEnabled("Start", context))
+            if (_diagnosticListener.IsEnabled(StartActivityName, context))
             {
                 _diagnosticListener.StartActivity(activity, context);
             }
@@ -69,11 +76,27 @@ namespace NServiceBus.Extensions.Diagnostics
                     context.Headers[Headers.RequestIdHeaderName] = activity.Id;
                 }
             }
+
+            if (!context.Headers.ContainsKey(Headers.CorrelationContextHeaderName))
+            {
+                var baggage = string.Join(",", activity.Baggage.Select(item => $"{item.Key}={item.Value}"));
+                if (!string.IsNullOrEmpty(baggage))
+                {
+                    context.Headers[Headers.CorrelationContextHeaderName] = baggage;
+                }
+            }
         }
 
-        private static void StopActivity(Activity activity, IOutgoingPhysicalMessageContext context)
+        private void StopActivity(Activity activity, IOutgoingPhysicalMessageContext context)
         {
-            _diagnosticListener.StopActivity(activity, context);
+            if (_diagnosticListener.IsEnabled(StopActivityName, context))
+            {
+                _diagnosticListener.StopActivity(activity, context);
+            }
+            else
+            {
+                activity.Start();
+            }
         }
     }
 }
