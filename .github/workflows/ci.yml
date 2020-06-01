@@ -25,3 +25,4 @@ jobs:
       env:
         MYGET_JBOGARD_CI_API_KEY: ${{ secrets.MYGET_JBOGARD_CI_API_KEY }}
       run: ./push.sh
+      shell: bash
