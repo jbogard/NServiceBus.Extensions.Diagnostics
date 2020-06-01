@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>0.0.1</Version>
     <Authors>Jimmy Bogard</Authors>
     <Product />
     <Company />
@@ -14,6 +13,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="MinVer" Version="2.3.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="NServiceBus" Version="7.3.0" />
     <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="4.7.0" />
   </ItemGroup>
