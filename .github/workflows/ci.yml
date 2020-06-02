@@ -26,3 +26,8 @@ jobs:
         MYGET_JBOGARD_CI_API_KEY: ${{ secrets.MYGET_JBOGARD_CI_API_KEY }}
       run: ./Push.ps1
       shell: pwsh
+    - name: Artifacts
+    - uses: actions/upload-artifact@v2
+      with:
+        name: artifacts
+        path: artifacts/**/*
