@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using NServiceBus.Pipeline;
 using NServiceBus.Testing;
@@ -95,6 +96,43 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
             }));
 
             var context = new TestableOutgoingPhysicalMessageContext();
+
+            var behavior = new OutgoingPhysicalMessageDiagnostics(diagnosticListener);
+
+            await behavior.Invoke(context, () => Task.CompletedTask);
+
+            startCalled.ShouldBeTrue();
+        }
+
+        [Fact]
+        public async Task Should_add_headers_to_tags()
+        {
+            var diagnosticListener = new DiagnosticListener("DummySource");
+            var startCalled = false;
+
+            diagnosticListener.Subscribe(new CallbackDiagnosticListener(pair =>
+            {
+                if (pair.Key == $"{ActivityNames.OutgoingPhysicalMessage}.Start")
+                {
+                    startCalled = true;
+
+                    var started = Activity.Current;
+                    started.ShouldNotBeNull();
+                    started.Tags.ShouldNotContain(kvp => kvp.Key == "foo");
+                    started.Tags.ShouldContain(kvp => kvp.Key == "SomeHeader1" && kvp.Value == "SomeValue1");
+                    started.Tags.ShouldContain(kvp => kvp.Key == "SomeHeader2" && kvp.Value == "SomeValue2");
+                }
+            }));
+
+            var context = new TestableOutgoingPhysicalMessageContext
+            {
+                Headers =
+                {
+                    {"foo", "bar"},
+                    {"NServiceBus.SomeHeader1", "SomeValue1"},
+                    {"NServiceBus.SomeHeader2", "SomeValue2"},
+                }
+            };
 
             var behavior = new OutgoingPhysicalMessageDiagnostics(diagnosticListener);
 

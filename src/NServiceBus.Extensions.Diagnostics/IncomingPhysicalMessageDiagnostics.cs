@@ -66,11 +66,11 @@ namespace NServiceBus.Extensions.Diagnostics
                         }
                     }
                 }
+            }
 
-                foreach (var header in context.MessageHeaders.Where(kvp => kvp.Key.StartsWith("NServiceBus")))
-                {
-                    activity.AddTag(header.Key.Replace("NServiceBus.", ""), header.Value);
-                }
+            foreach (var header in context.MessageHeaders.Where(kvp => kvp.Key.StartsWith("NServiceBus")))
+            {
+                activity.AddTag(header.Key.Replace("NServiceBus.", ""), header.Value);
             }
 
             _diagnosticListener.OnActivityImport(activity, context);

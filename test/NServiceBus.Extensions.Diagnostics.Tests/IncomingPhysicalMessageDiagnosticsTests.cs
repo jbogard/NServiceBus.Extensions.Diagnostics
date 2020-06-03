@@ -104,6 +104,43 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
         }
 
         [Fact]
+        public async Task Should_add_headers_to_tags()
+        {
+            var diagnosticListener = new DiagnosticListener("DummySource");
+            var startCalled = false;
+
+            diagnosticListener.Subscribe(new CallbackDiagnosticListener(pair =>
+            {
+                if (pair.Key == $"{ActivityNames.IncomingPhysicalMessage}.Start")
+                {
+                    startCalled = true;
+
+                    var started = Activity.Current;
+                    started.ShouldNotBeNull();
+                    started.Tags.ShouldNotContain(kvp => kvp.Key == "foo");
+                    started.Tags.ShouldContain(kvp => kvp.Key == "SomeHeader1" && kvp.Value == "SomeValue1");
+                    started.Tags.ShouldContain(kvp => kvp.Key == "SomeHeader2" && kvp.Value == "SomeValue2");
+                }
+            }));
+
+            var context = new TestableIncomingPhysicalMessageContext
+            {
+                MessageHeaders =
+                {
+                    {"foo", "bar"},
+                    {"NServiceBus.SomeHeader1", "SomeValue1"},
+                    {"NServiceBus.SomeHeader2", "SomeValue2"},
+                }
+            };
+
+            var behavior = new IncomingPhysicalMessageDiagnostics(diagnosticListener);
+
+            await behavior.Invoke(context, () => Task.CompletedTask);
+
+            startCalled.ShouldBeTrue();
+        }
+
+        [Fact]
         public async Task Should_start_activity_and_set_appropriate_headers()
         {
             // Generate an id we can use for the request id header (in the correct format)
