@@ -13,6 +13,11 @@ namespace NServiceBus.Extensions.Diagnostics
         public IncomingLogicalMessageDiagnostics(DiagnosticListener diagnosticListener)
             => _diagnosticListener = diagnosticListener;
 
+        public IncomingLogicalMessageDiagnostics()
+            : this(new DiagnosticListener(ActivityNames.IncomingLogicalMessage))
+        {
+        }
+
         public override async Task Invoke(IIncomingLogicalMessageContext context, Func<Task> next)
         {
             await next().ConfigureAwait(false);

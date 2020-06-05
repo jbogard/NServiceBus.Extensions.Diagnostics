@@ -18,6 +18,9 @@ namespace NServiceBus.Extensions.Diagnostics
         public IncomingPhysicalMessageDiagnostics(DiagnosticListener diagnosticListener) 
             => _diagnosticListener = diagnosticListener;
 
+        public IncomingPhysicalMessageDiagnostics() 
+            : this(new DiagnosticListener(ActivityNames.IncomingPhysicalMessage)) { }
+
         public override async Task Invoke(
             IIncomingPhysicalMessageContext context,
             Func<Task> next)

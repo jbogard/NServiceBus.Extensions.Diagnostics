@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using NServiceBus.Pipeline;
 
@@ -16,6 +15,9 @@ namespace NServiceBus.Extensions.Diagnostics
 
         public OutgoingPhysicalMessageDiagnostics(DiagnosticListener diagnosticListener)
             => _diagnosticListener = diagnosticListener;
+
+        public OutgoingPhysicalMessageDiagnostics()
+            : this(new DiagnosticListener(ActivityNames.OutgoingPhysicalMessage)) { }
 
         public override async Task Invoke(IOutgoingPhysicalMessageContext context, Func<Task> next)
         {
