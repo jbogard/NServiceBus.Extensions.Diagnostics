@@ -36,6 +36,10 @@ namespace NServiceBus.Extensions.Diagnostics.OpenTelemetry.Implementation
                 {
                     span.SetAttribute($"messaging.nservicebus.{tag.Key.ToLowerInvariant()}", tag.Value);
                 }
+                foreach (var baggageItem in activity.Baggage)
+                {
+                    span.SetAttribute(baggageItem.Key, baggageItem.Value);
+                }
             }
         }
 
