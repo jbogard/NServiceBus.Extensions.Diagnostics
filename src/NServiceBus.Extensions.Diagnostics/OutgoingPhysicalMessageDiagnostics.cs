@@ -39,7 +39,7 @@ namespace NServiceBus.Extensions.Diagnostics
         {
             var activity = new Activity(ActivityNames.OutgoingPhysicalMessage);
 
-            _diagnosticListener.OnActivityImport(activity, context);
+            _diagnosticListener.OnActivityExport(activity, context);
 
             foreach (var header in context.Headers.Where(kvp => kvp.Key.StartsWith("NServiceBus")))
             {
