@@ -41,11 +41,6 @@ namespace NServiceBus.Extensions.Diagnostics
 
             _diagnosticListener.OnActivityExport(activity, context);
 
-            foreach (var header in context.Headers.Where(kvp => kvp.Key.StartsWith("NServiceBus")))
-            {
-                activity.AddTag(header.Key.Replace("NServiceBus.", ""), header.Value);
-            }
-
             if (_diagnosticListener.IsEnabled(StartActivityName, context))
             {
                 _diagnosticListener.StartActivity(activity, context);

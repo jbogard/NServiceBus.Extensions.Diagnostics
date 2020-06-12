@@ -118,8 +118,6 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
                     var started = Activity.Current;
                     started.ShouldNotBeNull();
                     started.Tags.ShouldNotContain(kvp => kvp.Key == "foo");
-                    started.Tags.ShouldContain(kvp => kvp.Key == "SomeHeader1" && kvp.Value == "SomeValue1");
-                    started.Tags.ShouldContain(kvp => kvp.Key == "SomeHeader2" && kvp.Value == "SomeValue2");
                 }
             }));
 
@@ -128,8 +126,6 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
                 MessageHeaders =
                 {
                     {"foo", "bar"},
-                    {"NServiceBus.SomeHeader1", "SomeValue1"},
-                    {"NServiceBus.SomeHeader2", "SomeValue2"},
                 }
             };
 
