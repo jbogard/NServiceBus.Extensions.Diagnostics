@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using NServiceBus.Pipeline;
 using NServiceBus.Routing;
 using NServiceBus.Settings;
@@ -71,8 +72,7 @@ namespace NServiceBus.Extensions.Diagnostics.OpenTelemetry.Implementation
 
             if (_options.CaptureMessageBody)
             {
-                //span.SetAttribute("messaging.message_payload", Encoding.UTF8.GetString(context.Message.Body));
-                span.SetAttribute("messaging.message_payload", context.Body);
+                span.SetAttribute("messaging.message_payload", Encoding.UTF8.GetString(context.Body));
             }
         }
     }

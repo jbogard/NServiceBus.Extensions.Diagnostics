@@ -34,8 +34,7 @@ namespace NServiceBus.Extensions.Diagnostics.OpenTelemetry.Implementation
 
                 if (_options.CaptureMessageBody)
                 {
-                    //span.SetAttribute("messaging.message_payload", Encoding.UTF8.GetString(context.Message.Body));
-                    span.SetAttribute("messaging.message_payload", context.Message.Body);
+                    span.SetAttribute("messaging.message_payload", Encoding.UTF8.GetString(context.Message.Body));
                 }
 
                 span.ApplyContext(settings, context.MessageHeaders);
