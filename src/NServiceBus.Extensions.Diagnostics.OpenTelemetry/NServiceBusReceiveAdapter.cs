@@ -9,9 +9,9 @@ namespace NServiceBus.Extensions.Diagnostics.OpenTelemetry
     {
         private readonly DiagnosticSourceSubscriber _diagnosticSourceSubscriber;
 
-        public NServiceBusReceiveAdapter(Tracer tracer)
+        public NServiceBusReceiveAdapter(Tracer tracer, NServiceBusInstrumentationOptions options)
         {
-            _diagnosticSourceSubscriber = new DiagnosticSourceSubscriber(new ProcessMessageListener("NServiceBus.Extensions.Diagnostics.IncomingPhysicalMessage", tracer), null);
+            _diagnosticSourceSubscriber = new DiagnosticSourceSubscriber(new ProcessMessageListener("NServiceBus.Extensions.Diagnostics.IncomingPhysicalMessage", tracer, options), null);
             _diagnosticSourceSubscriber.Subscribe();
         }
 

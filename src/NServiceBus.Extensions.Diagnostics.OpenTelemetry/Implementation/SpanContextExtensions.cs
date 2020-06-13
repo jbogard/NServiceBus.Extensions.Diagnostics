@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using NServiceBus.Settings;
 using NServiceBus.Transport;
 using OpenTelemetry.Trace;
@@ -30,6 +31,11 @@ namespace NServiceBus.Extensions.Diagnostics.OpenTelemetry.Implementation
                 {
                     span.SetAttribute("messaging.destination_kind", kind);
                 }
+            }
+
+            foreach (var header in contextHeaders.Where(header => header.Key.StartsWith("NServiceBus.")))
+            {
+                span.SetAttribute($"messaging.{header.Key.ToLowerInvariant()}", header.Value);
             }
         }
 

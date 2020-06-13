@@ -1,12 +1,24 @@
-﻿using OpenTelemetry.Trace.Configuration;
+﻿using System;
+using OpenTelemetry.Trace.Configuration;
 
 namespace NServiceBus.Extensions.Diagnostics.OpenTelemetry
 {
     public static class TraceBuilderExtensions
     {
         public static TracerBuilder AddNServiceBusAdapter(this TracerBuilder builder)
-            => builder
-                .AddAdapter(t => new NServiceBusReceiveAdapter(t))
-                .AddAdapter(t => new NServiceBusSendAdapter(t));
+            => builder.AddNServiceBusAdapter(null);
+
+        public static TracerBuilder AddNServiceBusAdapter(this TracerBuilder builder, Action<NServiceBusInstrumentationOptions> configureInstrumentationOptions)
+        {
+            var options = new NServiceBusInstrumentationOptions();
+
+            configureInstrumentationOptions ??= opt => { };
+            
+            configureInstrumentationOptions(options);
+            
+            return builder
+                .AddAdapter(t => new NServiceBusReceiveAdapter(t, options))
+                .AddAdapter(t => new NServiceBusSendAdapter(t, options));
+        }
     }
 }

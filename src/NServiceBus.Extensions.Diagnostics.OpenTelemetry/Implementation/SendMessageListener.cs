@@ -10,9 +10,10 @@ namespace NServiceBus.Extensions.Diagnostics.OpenTelemetry.Implementation
 {
     internal class SendMessageListener : ListenerHandler
     {
-        public SendMessageListener(string sourceName, Tracer tracer) : base(sourceName, tracer)
-        {
-        }
+        private readonly NServiceBusInstrumentationOptions _options;
+
+        public SendMessageListener(string sourceName, Tracer tracer, NServiceBusInstrumentationOptions options) : base(sourceName, tracer) 
+            => _options = options;
 
         public override void OnStartActivity(Activity activity, object payload)
         {
@@ -26,7 +27,7 @@ namespace NServiceBus.Extensions.Diagnostics.OpenTelemetry.Implementation
 
             if (span.IsRecording)
             {
-                SetSpanAttributes(activity, context, span);
+                SetSpanAttributes(context, span);
             }
         }
 
@@ -61,16 +62,17 @@ namespace NServiceBus.Extensions.Diagnostics.OpenTelemetry.Implementation
             return span;
         }
 
-        private static void SetSpanAttributes(Activity activity, IOutgoingPhysicalMessageContext context, TelemetrySpan span)
+        private void SetSpanAttributes(IOutgoingPhysicalMessageContext context, TelemetrySpan span)
         {
             span.SetAttribute("messaging.message_id", context.MessageId);
             span.SetAttribute("messaging.message_payload_size_bytes", context.Body.Length);
 
             span.ApplyContext(context.Builder.Build<ReadOnlySettings>(), context.Headers);
 
-            foreach (var tag in activity.Tags)
+            if (_options.CaptureMessageBody)
             {
-                span.SetAttribute($"messaging.nservicebus.{tag.Key.ToLowerInvariant()}", tag.Value);
+                //span.SetAttribute("messaging.message_payload", Encoding.UTF8.GetString(context.Message.Body));
+                span.SetAttribute("messaging.message_payload", context.Body);
             }
         }
     }
