@@ -1,7 +1,7 @@
 $scriptName = $MyInvocation.MyCommand.Name
 $artifacts = "./artifacts"
 
-if ($Env:NUGET_API_KEY -eq $null) {
+if ([string]::IsNullOrEmpty($Env:NUGET_API_KEY)) {
     Write-Host "${scriptName}: NUGET_API_KEY is empty or not set. Skipped pushing package(s)."
 } else {
     Get-ChildItem $artifacts -Filter "*.nupkg" | ForEach-Object {
