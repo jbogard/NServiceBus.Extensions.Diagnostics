@@ -5,6 +5,10 @@
     <PackageTags>nservicebus;messaging;diagnostics</PackageTags>
     <Authors>Jimmy Bogard</Authors>
     <Copyright>Jimmy Bogard</Copyright>
+    <Description>
+      This library adds System.Diagnostics support to NServiceBus endpoints. It supports the W3C Trace Context recommendation and Correlation Context draft standards
+      for incoming and outgoing requests. It creates and starts activities for incoming/outgoing requests, and exposes diagnostics events through DiagnosticSource.
+    </Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>

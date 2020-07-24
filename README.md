@@ -1,17 +1,13 @@
 # NServiceBus.Extensions.Diagnostics
 
 ![CI](https://github.com/jbogard/NServiceBus.Extensions.Diagnostics/workflows/CI/badge.svg)
+[![NuGet](https://img.shields.io/nuget/dt/NServiceBus.Extensions.Diagnostics.svg)](https://www.nuget.org/packages/NServiceBus.Extensions.Diagnostics) 
+[![NuGet](https://img.shields.io/nuget/vpre/NServiceBus.Extensions.Diagnostics.svg)](https://www.nuget.org/packages/NServiceBus.Extensions.Diagnostics)
+[![MyGet (dev)](https://img.shields.io/myget/jbogard-ci/v/NServiceBus.Extensions.Diagnostics.svg)](https://myget.org/gallery/jbogard-ci)
 
 ## Usage
 
-This repo includes two packages:
-
- - [NServiceBus.Extensions.Diagnostics](https://www.nuget.org/packages/NServiceBus.Extensions.Diagnostics/)
- - [NServiceBus.Extensions.Diagnostics.OpenTelemetry](https://www.nuget.org/packages/NServiceBus.Extensions.Diagnostics.OpenTelemetry/)
- 
 The `NServiceBus.Extensions.Diagnostics` package extends NServiceBus to expose telemetry information via `System.Diagnostics`.
-
-The `NServiceBus.Extensions.Diagnostics.OpenTelemetry` package provides adapters to [OpenTelemetry](https://opentelemetry.io/).
 
 To use `NServiceBus.Extensions.Diagnostics`, simply reference the package. The `DiagnosticsFeature` is enabled by default.
 
@@ -42,35 +38,3 @@ Activity.Current.AddBaggage("mykey", "myvalue");
 
 Correlation context can then flow out to tracing and observability tools. Common usage for correlation context are user IDs, session IDs, conversation IDs, and anything you might want to search traces to triangulate specific traces.
 
-## OpenTelemetry usage
-
-Once you've referenced the Diagnostics package to expose diagnostics events as above, you can configure OpenTelemetry (typically through the [OpenTelemetry.Extensions.Hosting](https://www.nuget.org/packages/OpenTelemetry.Extensions.Hosting/0.2.0-alpha.275) package).
-
-```csharp
-services.AddOpenTelemetry(builder => {
-    builder
-        // Configure exporters
-        .UseZipkin()
-        // Configure adapters
-        .UseRequestAdapter()
-        .UseDependencyAdapter()
-        .AddNServiceBusAdapter(); // Adds NServiceBus OTel support
-});
-```
-
-Since OTel is supported at the NServiceBus level, any transport that NServiceBus supports also supports OTel.
-This package supports the latest released alpha package on NuGet.
-
-By default, the message body is not logged to OTel. To change this, configure the options:
-
-```csharp
-services.AddOpenTelemetry(builder => {
-    builder
-        // Configure exporters
-        .UseZipkin()
-        // Configure adapters
-        .UseRequestAdapter()
-        .UseDependencyAdapter()
-        .AddNServiceBusAdapter(opt => opt.CaptureMessageBody = true); // Adds NServiceBus OTel support
-});
-```
