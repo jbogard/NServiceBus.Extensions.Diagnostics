@@ -92,7 +92,7 @@ namespace NServiceBus.Extensions.Diagnostics
             }
             else
             {
-                activity.Start();
+                activity.Stop();
             }
         }
     }
