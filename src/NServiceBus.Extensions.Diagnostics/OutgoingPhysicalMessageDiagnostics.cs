@@ -8,47 +8,44 @@ namespace NServiceBus.Extensions.Diagnostics
 {
     public class OutgoingPhysicalMessageDiagnostics : Behavior<IOutgoingPhysicalMessageContext>
     {
+        private readonly IActivityEnricher _activityEnricher;
         private readonly DiagnosticListener _diagnosticListener;
+        private const string EventName = ActivityNames.OutgoingPhysicalMessage + ".Sent";
 
-        private const string StartActivityName = ActivityNames.OutgoingPhysicalMessage + ".Start";
-        private const string StopActivityName = ActivityNames.OutgoingPhysicalMessage + ".Stop";
-
-        public OutgoingPhysicalMessageDiagnostics(DiagnosticListener diagnosticListener)
-            => _diagnosticListener = diagnosticListener;
-
-        public OutgoingPhysicalMessageDiagnostics()
-            : this(new DiagnosticListener(ActivityNames.OutgoingPhysicalMessage)) { }
+        public OutgoingPhysicalMessageDiagnostics(IActivityEnricher activityEnricher)
+        {
+            _diagnosticListener = new DiagnosticListener(ActivityNames.OutgoingPhysicalMessage);
+            _activityEnricher = activityEnricher;
+        }
 
         public override async Task Invoke(IOutgoingPhysicalMessageContext context, Func<Task> next)
         {
-            var activity = StartActivity(context);
-
-            InjectHeaders(activity, context);
-
-            try
+            using (var activity = StartActivity(context))
             {
+                if (activity != null)
+                {
+                    InjectHeaders(activity, context);
+                }
+
                 await next().ConfigureAwait(false);
-            }
-            finally
-            {
-                StopActivity(activity, context);
+
+                if (_diagnosticListener.IsEnabled(EventName))
+                {
+                    _diagnosticListener.Write(EventName, context);
+                }
             }
         }
 
-        private Activity StartActivity(IOutgoingPhysicalMessageContext context)
+        private Activity? StartActivity(IOutgoingPhysicalMessageContext context)
         {
-            var activity = new Activity(ActivityNames.OutgoingPhysicalMessage);
+            var activity = NServiceBusActivitySource.ActivitySource.StartActivity(ActivityNames.OutgoingPhysicalMessage, ActivityKind.Producer);
 
-            _diagnosticListener.OnActivityExport(activity, context);
+            if (activity == null)
+            {
+                return activity;
+            }
 
-            if (_diagnosticListener.IsEnabled(StartActivityName, context))
-            {
-                _diagnosticListener.StartActivity(activity, context);
-            }
-            else
-            {
-                activity.Start();
-            }
+            _activityEnricher.Enrich(activity, context);
 
             return activity;
         }
@@ -81,18 +78,6 @@ namespace NServiceBus.Extensions.Diagnostics
                 {
                     context.Headers[Headers.CorrelationContextHeaderName] = baggage;
                 }
-            }
-        }
-
-        private void StopActivity(Activity activity, IOutgoingPhysicalMessageContext context)
-        {
-            if (_diagnosticListener.IsEnabled(StopActivityName, context))
-            {
-                _diagnosticListener.StopActivity(activity, context);
-            }
-            else
-            {
-                activity.Stop();
             }
         }
     }

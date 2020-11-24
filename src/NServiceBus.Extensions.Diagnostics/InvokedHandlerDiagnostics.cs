@@ -10,10 +10,7 @@ namespace NServiceBus.Extensions.Diagnostics
         private readonly DiagnosticListener _diagnosticListener;
         private const string EventName = ActivityNames.InvokedHandler + ".Processed";
 
-        public InvokedHandlerDiagnostics(DiagnosticListener diagnosticListener)
-        {
-            _diagnosticListener = diagnosticListener;
-        }
+        public InvokedHandlerDiagnostics(DiagnosticListener diagnosticListener) => _diagnosticListener = diagnosticListener;
 
         public InvokedHandlerDiagnostics() : this(new DiagnosticListener(ActivityNames.InvokedHandler))
         {

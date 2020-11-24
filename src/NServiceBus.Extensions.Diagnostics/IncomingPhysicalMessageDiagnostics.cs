@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Web;
@@ -10,49 +10,46 @@ namespace NServiceBus.Extensions.Diagnostics
 {
     public class IncomingPhysicalMessageDiagnostics : Behavior<IIncomingPhysicalMessageContext>
     {
+        private readonly IActivityEnricher _activityEnricher;
         private readonly DiagnosticListener _diagnosticListener;
+        private const string EventName = ActivityNames.IncomingPhysicalMessage + ".Processed";
 
-        private const string StartActivityName = ActivityNames.IncomingPhysicalMessage + ".Start";
-        private const string StopActivityName = ActivityNames.IncomingPhysicalMessage + ".Stop";
-
-        public IncomingPhysicalMessageDiagnostics(DiagnosticListener diagnosticListener) 
-            => _diagnosticListener = diagnosticListener;
-
-        public IncomingPhysicalMessageDiagnostics() 
-            : this(new DiagnosticListener(ActivityNames.IncomingPhysicalMessage)) { }
+        public IncomingPhysicalMessageDiagnostics(IActivityEnricher activityEnricher)
+        {
+            _diagnosticListener = new DiagnosticListener(ActivityNames.IncomingPhysicalMessage);
+            _activityEnricher = activityEnricher;
+        }
 
         public override async Task Invoke(
             IIncomingPhysicalMessageContext context,
             Func<Task> next)
         {
-            var activity = StartActivity(context);
-
-            try
+            using (StartActivity(context))
             {
                 await next().ConfigureAwait(false);
-            }
-            finally
-            {
-                StopActivity(activity, context);
+
+                if (_diagnosticListener.IsEnabled(EventName))
+                {
+                    _diagnosticListener.Write(EventName, context);
+                }
             }
         }
 
-        private Activity StartActivity(IIncomingPhysicalMessageContext context)
+        private Activity? StartActivity(IIncomingPhysicalMessageContext context)
         {
-            var activity = new Activity(ActivityNames.IncomingPhysicalMessage);
-
-            if (!context.MessageHeaders.TryGetValue(Headers.TraceParentHeaderName, out var requestId))
+            if (!context.MessageHeaders.TryGetValue(Headers.TraceParentHeaderName, out var parentId))
             {
-                context.MessageHeaders.TryGetValue(Headers.RequestIdHeaderName, out requestId);
+                context.MessageHeaders.TryGetValue(Headers.RequestIdHeaderName, out parentId);
             }
 
-            if (!string.IsNullOrEmpty(requestId))
-            {
-                activity.SetParentId(requestId);
+            string? traceStateString = default;
+            List<KeyValuePair<string, string?>> baggageItems = new();
 
+            if (!string.IsNullOrEmpty(parentId))
+            {
                 if (context.MessageHeaders.TryGetValue(Headers.TraceStateHeaderName, out var traceState))
                 {
-                    activity.TraceStateString = traceState;
+                    traceStateString = traceState;
                 }
 
                 if (context.MessageHeaders.TryGetValue(Headers.CorrelationContextHeaderName, out var correlationContext))
@@ -64,37 +61,32 @@ namespace NServiceBus.Extensions.Diagnostics
                         {
                             if (NameValueHeaderValue.TryParse(item, out var baggageItem))
                             {
-                                activity.AddBaggage(baggageItem.Name, HttpUtility.UrlDecode(baggageItem.Value));
+                                baggageItems.Add(new KeyValuePair<string, string?>(baggageItem.Name, HttpUtility.UrlDecode(baggageItem.Value)));
                             }
                         }
                     }
                 }
             }
 
-            _diagnosticListener.OnActivityImport(activity, context);
+            var activity = parentId == null
+                ? NServiceBusActivitySource.ActivitySource.StartActivity(ActivityNames.IncomingPhysicalMessage, ActivityKind.Consumer)
+                : NServiceBusActivitySource.ActivitySource.StartActivity(ActivityNames.IncomingPhysicalMessage, ActivityKind.Consumer, parentId);
 
-            if (_diagnosticListener.IsEnabled(StartActivityName, context))
+            if (activity == null)
             {
-                _diagnosticListener.StartActivity(activity, context);
+                return activity;
             }
-            else
+
+            activity.TraceStateString = traceStateString;
+
+            _activityEnricher.Enrich(activity, context);
+
+            foreach (var baggageItem in baggageItems)
             {
-                activity.Start();
+                activity.AddBaggage(baggageItem.Key, baggageItem.Value);
             }
 
             return activity;
-        }
-
-        private void StopActivity(Activity activity, IIncomingPhysicalMessageContext context)
-        {
-            if (_diagnosticListener.IsEnabled(StopActivityName, context))
-            {
-                _diagnosticListener.StopActivity(activity, context);
-            }
-            else
-            {
-                activity.Stop();
-            }
         }
     }
 }

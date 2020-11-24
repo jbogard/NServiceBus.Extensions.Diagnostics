@@ -35,7 +35,7 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
         [Fact]
         public async Task Should_fire_activity_start_stop_when_listener_attached()
         {
-            var diagnosticListener = new DiagnosticListener("DummySource");
+            using var diagnosticListener = new DiagnosticListener("DummySource");
             var context = new TestableIncomingLogicalMessageContext();
             var processedFired = false;
 

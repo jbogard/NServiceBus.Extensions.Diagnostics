@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 using NServiceBus.Pipeline;
+using NServiceBus.Settings;
 using NServiceBus.Testing;
 using Shouldly;
 using Xunit;
@@ -18,28 +19,19 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
         [Fact]
         public async Task Should_not_fire_activity_start_stop_when_no_listener_attached()
         {
-            var diagnosticListener = new DiagnosticListener("DummySource");
             var context = new TestableIncomingPhysicalMessageContext();
             var stopFired = false;
             var startFired = false;
 
-            diagnosticListener.Subscribe(new CallbackDiagnosticListener(pair =>
-                {
-                    // This should not fire
-                    if (pair.Key == $"{ActivityNames.IncomingPhysicalMessage}.Start")
-                    {
-                        startFired = true;
-                    }
+            using var listener = new ActivityListener
+            {
+                ShouldListenTo = source => source.Name == "Nonsense",
+                ActivityStarted = _ => startFired = true,
+                ActivityStopped = _ => stopFired = true
+            };
+            ActivitySource.AddActivityListener(listener);
 
-                    // This should not fire
-                    if (pair.Key == $"{ActivityNames.IncomingPhysicalMessage}.Stop")
-                    {
-                        stopFired = true;
-                    }
-                }),
-                (s, o, arg3) => false);
-
-            var behavior = new IncomingPhysicalMessageDiagnostics(diagnosticListener);
+            var behavior = new IncomingPhysicalMessageDiagnostics(new FakeActivityEnricher());
 
             await behavior.Invoke(context, () => Task.CompletedTask);
 
@@ -50,25 +42,20 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
         [Fact]
         public async Task Should_fire_activity_start_stop_when_listener_attached()
         {
-            var diagnosticListener = new DiagnosticListener("DummySource");
             var context = new TestableIncomingPhysicalMessageContext();
             var stopFired = false;
             var startFired = false;
 
-            diagnosticListener.Subscribe(new CallbackDiagnosticListener(pair =>
-                {
-                    if (pair.Key == $"{ActivityNames.IncomingPhysicalMessage}.Start")
-                    {
-                        startFired = true;
-                    }
+            using var listener = new ActivityListener
+            {
+                ShouldListenTo = source => source.Name == "NServiceBus.Extensions.Diagnostics",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = _ => startFired = true,
+                ActivityStopped = _ => stopFired = true
+            };
+            ActivitySource.AddActivityListener(listener);
 
-                    if (pair.Key == $"{ActivityNames.IncomingPhysicalMessage}.Stop")
-                    {
-                        stopFired = true;
-                    }
-                }));
-
-            var behavior = new IncomingPhysicalMessageDiagnostics(diagnosticListener);
+            var behavior = new IncomingPhysicalMessageDiagnostics(new FakeActivityEnricher());
 
             await behavior.Invoke(context, () => Task.CompletedTask);
 
@@ -79,24 +66,24 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
         [Fact]
         public async Task Should_start_and_log_activity()
         {
-            var diagnosticListener = new DiagnosticListener("DummySource");
             var startCalled = false;
 
-            diagnosticListener.Subscribe(new CallbackDiagnosticListener(pair =>
+            using var listener = new ActivityListener
             {
-                if (pair.Key == $"{ActivityNames.IncomingPhysicalMessage}.Start")
+                ShouldListenTo = source => source.Name == "NServiceBus.Extensions.Diagnostics",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity =>
                 {
                     startCalled = true;
-                    pair.Value.ShouldNotBeNull();
-                    Activity.Current.ShouldNotBeNull();
-                    Activity.Current.OperationName.ShouldBe(ActivityNames.IncomingPhysicalMessage);
-                    pair.Value.ShouldBeAssignableTo<IIncomingPhysicalMessageContext>();
-                }
-            }));
+                    activity.ShouldNotBeNull();
+                    activity.OperationName.ShouldBe(ActivityNames.IncomingPhysicalMessage);
+                },
+            };
+            ActivitySource.AddActivityListener(listener);
 
             var context = new TestableIncomingPhysicalMessageContext();
 
-            var behavior = new IncomingPhysicalMessageDiagnostics(diagnosticListener);
+            var behavior = new IncomingPhysicalMessageDiagnostics(new FakeActivityEnricher());
 
             await behavior.Invoke(context, () => Task.CompletedTask);
 
@@ -106,20 +93,21 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
         [Fact]
         public async Task Should_add_headers_to_tags()
         {
-            var diagnosticListener = new DiagnosticListener("DummySource");
             var startCalled = false;
 
-            diagnosticListener.Subscribe(new CallbackDiagnosticListener(pair =>
+            using var listener = new ActivityListener
             {
-                if (pair.Key == $"{ActivityNames.IncomingPhysicalMessage}.Start")
+                ShouldListenTo = source => source.Name == "NServiceBus.Extensions.Diagnostics",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity =>
                 {
                     startCalled = true;
 
-                    var started = Activity.Current;
-                    started.ShouldNotBeNull();
-                    started.Tags.ShouldNotContain(kvp => kvp.Key == "foo");
-                }
-            }));
+                    activity.ShouldNotBeNull();
+                    activity.Tags.ShouldNotContain(kvp => kvp.Key == "foo");
+                },
+            };
+            ActivitySource.AddActivityListener(listener);
 
             var context = new TestableIncomingPhysicalMessageContext
             {
@@ -129,7 +117,7 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
                 }
             };
 
-            var behavior = new IncomingPhysicalMessageDiagnostics(diagnosticListener);
+            var behavior = new IncomingPhysicalMessageDiagnostics(new FakeActivityEnricher());
 
             await behavior.Invoke(context, () => Task.CompletedTask);
 
@@ -140,21 +128,20 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
         public async Task Should_start_activity_and_set_appropriate_headers()
         {
             // Generate an id we can use for the request id header (in the correct format)
-            var activity = new Activity("IncomingRequest");
-            activity.Start();
-            var id = activity.Id;
-            activity.Stop();
+            using var dummy = new Activity("IncomingRequest");
+            dummy.Start();
+            var id = dummy.Id;
+            dummy.Stop();
 
-            var diagnosticListener = new DiagnosticListener("DummySource");
             Activity started = null;
 
-            diagnosticListener.Subscribe(new CallbackDiagnosticListener(pair =>
+            using var listener = new ActivityListener
             {
-                if (pair.Key == $"{ActivityNames.IncomingPhysicalMessage}.Start")
-                {
-                    started = Activity.Current;
-                }
-            }));
+                ShouldListenTo = source => source.Name == "NServiceBus.Extensions.Diagnostics",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => started = activity,
+            };
+            ActivitySource.AddActivityListener(listener);
 
             var tracestate = "TraceState";
 
@@ -168,7 +155,7 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
                 }
             };
 
-            var behavior = new IncomingPhysicalMessageDiagnostics(diagnosticListener);
+            var behavior = new IncomingPhysicalMessageDiagnostics(new FakeActivityEnricher());
 
             await behavior.Invoke(context, () => Task.CompletedTask);
 
