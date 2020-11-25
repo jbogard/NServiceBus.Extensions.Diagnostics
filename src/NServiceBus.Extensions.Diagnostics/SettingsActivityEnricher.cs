@@ -23,10 +23,13 @@ namespace NServiceBus.Extensions.Diagnostics
 
         public void Enrich(Activity activity, IIncomingPhysicalMessageContext context)
         {
-            activity.DisplayName = _settings.LogicalAddress().ToString();
+            var destinationName = _settings.LogicalAddress();
+            const string operationName = "process";
+            activity.DisplayName = $"{destinationName} {operationName}";
 
             activity.AddTag("messaging.message_id", context.Message.MessageId);
-            activity.AddTag("messaging.operation", "process");
+            activity.AddTag("messaging.operation", operationName);
+            activity.AddTag("messaging.destination", destinationName);
             activity.AddTag("messaging.message_payload_size_bytes", context.Message.Body.Length.ToString());
 
             Enrich(activity, context.MessageHeaders);
@@ -39,24 +42,25 @@ namespace NServiceBus.Extensions.Diagnostics
 
         public void Enrich(Activity activity, IOutgoingPhysicalMessageContext context)
         {
-            context.Headers.TryGetValue(NServiceBus.Headers.MessageIntent, out var intent);
-
             var routes = context.RoutingStrategies
                 .Select(r => r.Apply(context.Headers))
                 .Select(t => t switch
                 {
                     UnicastAddressTag u => u.Destination,
-                    MulticastAddressTag m => m.MessageType.Name,
+                    MulticastAddressTag m => m.MessageType.FullName,
                     _ => null
                 })
                 .ToList();
 
-            var operationName = $"{intent ?? activity.OperationName} {string.Join(", ", routes)}";
+            var destinationName = string.Join(", ", routes);
+            const string operationName = "send";
 
-            activity.DisplayName = operationName;
+            activity.DisplayName = $"{destinationName} {operationName}";
 
             activity.AddTag("messaging.message_id", context.MessageId);
+            activity.AddTag("messaging.operation", operationName);
             activity.AddTag("messaging.message_payload_size_bytes", context.Body.Length.ToString());
+            activity.AddTag("messaging.destination", destinationName);
 
             Enrich(activity, context.Headers);
 
@@ -70,7 +74,6 @@ namespace NServiceBus.Extensions.Diagnostics
         {
             var transportDefinition = _settings.Get<TransportDefinition>();
             activity.AddTag("messaging.system", transportDefinition.GetType().Name.Replace("Transport", null).ToLowerInvariant());
-            activity.AddTag("messaging.destination", _settings.LogicalAddress().ToString());
             if (contextHeaders.TryGetValue(NServiceBus.Headers.ConversationId, out var conversationId))
             {
                 activity.AddTag("messaging.conversation_id", conversationId);
