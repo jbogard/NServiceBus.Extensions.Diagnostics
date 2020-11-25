@@ -39,3 +39,28 @@ Activity.Current.AddBaggage("mykey", "myvalue");
 
 Correlation context can then flow out to tracing and observability tools. Common usage for correlation context are user IDs, session IDs, conversation IDs, and anything you might want to search traces to triangulate specific traces.
 
+### `ActivitySource` support
+
+This package exposes an [`ActivitySource`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.activitysource?view=net-5.0) with a `Name` the same as the assembly, `NServiceBus.Extensions.Diagnostics`. Use this name in any [`ActivityListener`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.activitylistener?view=net-5.0)-based listeners, including [`OpenTelemetry`](https://opentelemetry.io/) using the [`OpenTelemetry.Extensions.Hosting`](https://www.nuget.org/packages/OpenTelemetry.Extensions.Hosting/) package:
+
+```csharp
+services.AddOpenTelemetryTracing(builder => builder
+    .AddSource("NServiceBus.Extensions.Diagnostics")
+```
+
+All the available [OpenTelemetry semantic tags](https://github.com/open-telemetry/opentelemetry-specification/blob/master/specification/trace/semantic_conventions/messaging.md) are set.
+
+### Configuring
+
+In order to limit potentially sensitive information, the message contents are not passed through to the `ActivitySource` by default. To enable this, configure the `InstrumentationOptions` setting in your `EndpointConfiguration`:
+
+```csharp
+var settings = endpointConfiguration.GetSettings();
+
+settings.Set(new NServiceBus.Extensions.Diagnostics.InstrumentationOptions
+{
+    CaptureMessageBody = true
+});
+```
+
+This will set a `messaging.message_payload` tag with the UTF8-decoded message body.
