@@ -52,9 +52,10 @@ namespace NServiceBus.Extensions.Diagnostics
                     traceStateString = traceState;
                 }
 
-                if (context.MessageHeaders.TryGetValue(Headers.CorrelationContextHeaderName, out var correlationContext))
+                if (context.MessageHeaders.TryGetValue(Headers.BaggageHeaderName, out var baggageValue)
+                   || context.MessageHeaders.TryGetValue(Headers.CorrelationContextHeaderName, out baggageValue))
                 {
-                    var baggage = correlationContext.Split(',');
+                    var baggage = baggageValue.Split(',');
                     if (baggage.Length > 0)
                     {
                         foreach (var item in baggage)
