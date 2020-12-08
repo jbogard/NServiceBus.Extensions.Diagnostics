@@ -71,12 +71,14 @@ namespace NServiceBus.Extensions.Diagnostics
                 }
             }
 
-            if (!context.Headers.ContainsKey(Headers.CorrelationContextHeaderName))
+            if (!context.Headers.ContainsKey(Headers.CorrelationContextHeaderName) 
+                && !context.Headers.ContainsKey(Headers.BaggageHeaderName))
             {
                 var baggage = string.Join(",", activity.Baggage.Select(item => $"{item.Key}={item.Value}"));
                 if (!string.IsNullOrEmpty(baggage))
                 {
                     context.Headers[Headers.CorrelationContextHeaderName] = baggage;
+                    context.Headers[Headers.BaggageHeaderName] = baggage;
                 }
             }
         }

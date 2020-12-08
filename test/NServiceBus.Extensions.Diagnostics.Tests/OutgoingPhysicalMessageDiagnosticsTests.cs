@@ -127,6 +127,7 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
             context.Headers.ShouldContain(kvp => kvp.Key == "traceparent" && kvp.Value == started.Id);
             context.Headers.ShouldContain(kvp => kvp.Key == "tracestate" && kvp.Value == outerActivity.TraceStateString);
             context.Headers.ShouldContain(kvp => kvp.Key == "Correlation-Context" && kvp.Value == "Key2=Value2,Key1=Value1");
+            context.Headers.ShouldContain(kvp => kvp.Key == "baggage" && kvp.Value == "Key2=Value2,Key1=Value1");
         }
     }
 }
