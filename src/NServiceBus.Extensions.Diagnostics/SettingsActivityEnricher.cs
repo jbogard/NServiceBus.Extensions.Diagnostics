@@ -44,7 +44,7 @@ namespace NServiceBus.Extensions.Diagnostics
                 activity.AddTag("messaging.message_payload", Encoding.UTF8.GetString(context.Message.Body));
             }
 
-            _options.EnrichIncoming?.Invoke(activity, context);
+            _options.Enrich?.Invoke(activity, context.MessageHeaders);
         }
 
         public void Enrich(Activity activity, IOutgoingPhysicalMessageContext context)
@@ -81,7 +81,7 @@ namespace NServiceBus.Extensions.Diagnostics
                 activity.AddTag("messaging.message_payload", Encoding.UTF8.GetString(context.Body));
             }
 
-            _options.EnrichOutgoing?.Invoke(activity, context);
+            _options.Enrich?.Invoke(activity, context.Headers);
         }
 
         private void Enrich(Activity activity, IReadOnlyDictionary<string, string> contextHeaders)

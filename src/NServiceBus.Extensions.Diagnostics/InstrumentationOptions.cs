@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using NServiceBus.Pipeline;
 
 namespace NServiceBus.Extensions.Diagnostics
 {
@@ -8,8 +8,6 @@ namespace NServiceBus.Extensions.Diagnostics
     {
         public bool CaptureMessageBody { get; set; }
 
-        public Action<Activity, IIncomingPhysicalMessageContext>? EnrichIncoming { get; set; }
-
-        public Action<Activity, IOutgoingPhysicalMessageContext>? EnrichOutgoing { get; set; }
+        public Action<Activity, IReadOnlyDictionary<string, string>>? Enrich { get; set; }
     }
 }
