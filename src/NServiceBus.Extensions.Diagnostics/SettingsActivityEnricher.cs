@@ -69,7 +69,7 @@ namespace NServiceBus.Extensions.Diagnostics
             if (!activity.IsAllDataRequested) return;
             if (_options.CaptureMessageBody)
             {
-	            activity.AddTag("messaging.message_payload", Encoding.UTF8.GetString(context.Body));
+                activity.AddTag("messaging.message_payload", Encoding.UTF8.GetString(context.Body));
             }
             _options.EnrichOutgoing?.Invoke(activity, context);
         }
