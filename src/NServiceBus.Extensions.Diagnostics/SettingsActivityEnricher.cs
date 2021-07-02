@@ -34,11 +34,16 @@ namespace NServiceBus.Extensions.Diagnostics
 
             Enrich(activity, context.MessageHeaders);
 
-            if (!activity.IsAllDataRequested) return;
+            if (!activity.IsAllDataRequested)
+            {
+	            return;
+            }
+
             if (_options.CaptureMessageBody)
             {
                 activity.AddTag("messaging.message_payload", Encoding.UTF8.GetString(context.Message.Body));
             }
+
             _options.EnrichIncoming?.Invoke(activity, context);
         }
 
@@ -66,11 +71,16 @@ namespace NServiceBus.Extensions.Diagnostics
 
             Enrich(activity, context.Headers);
 
-            if (!activity.IsAllDataRequested) return;
+            if (!activity.IsAllDataRequested)
+            {
+	            return;
+            }
+
             if (_options.CaptureMessageBody)
             {
                 activity.AddTag("messaging.message_payload", Encoding.UTF8.GetString(context.Body));
             }
+
             _options.EnrichOutgoing?.Invoke(activity, context);
         }
 
