@@ -11,47 +11,75 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
         [Fact]
         public async Task Should_not_fire_activity_start_stop_when_no_listener_attached()
         {
-            var diagnosticListener = new DiagnosticListener("DummySource");
             var context = new TestableOutgoingLogicalMessageContext();
-            var processedFired = false;
+            var stopFired = false;
+            var startFired = false;
 
-            diagnosticListener.Subscribe(new CallbackDiagnosticListener(pair =>
-                {
-                    // This should not fire
-                    if (pair.Key == $"{ActivityNames.OutgoingLogicalMessage}.Sent")
-                    {
-                        processedFired = true;
-                    }
-                }),
-                (s, o, arg3) => false);
+            using var listener = new ActivityListener
+            {
+                ShouldListenTo = source => source.Name == "Nonsense",
+                ActivityStarted = _ => startFired = true,
+                ActivityStopped = _ => stopFired = true
+            };
+            ActivitySource.AddActivityListener(listener);
 
-            var behavior = new OutgoingLogicalMessageDiagnostics(diagnosticListener);
+            var behavior = new OutgoingLogicalMessageDiagnostics();
 
             await behavior.Invoke(context, () => Task.CompletedTask);
 
-            processedFired.ShouldBeFalse();
+            startFired.ShouldBeFalse();
+            stopFired.ShouldBeFalse();
         }
 
         [Fact]
         public async Task Should_fire_activity_start_stop_when_listener_attached()
         {
-            var diagnosticListener = new DiagnosticListener("DummySource");
             var context = new TestableOutgoingLogicalMessageContext();
-            var processedFired = false;
+            var stopFired = false;
+            var startFired = false;
 
-            diagnosticListener.Subscribe(new CallbackDiagnosticListener(pair =>
+            using var listener = new ActivityListener
             {
-                if (pair.Key == $"{ActivityNames.OutgoingLogicalMessage}.Sent")
-                {
-                    processedFired = true;
-                }
-            }));
+                ShouldListenTo = source => source.Name == "NServiceBus.Extensions.Diagnostics",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = _ => startFired = true,
+                ActivityStopped = _ => stopFired = true
+            };
+            ActivitySource.AddActivityListener(listener);
 
-            var behavior = new OutgoingLogicalMessageDiagnostics(diagnosticListener);
+            var behavior = new OutgoingLogicalMessageDiagnostics();
 
             await behavior.Invoke(context, () => Task.CompletedTask);
 
-            processedFired.ShouldBeTrue();
+            startFired.ShouldBeTrue();
+            stopFired.ShouldBeTrue();
+        }
+
+        [Fact]
+        public async Task Should_start_and_log_activity()
+        {
+            var startCalled = false;
+
+            using var listener = new ActivityListener
+            {
+                ShouldListenTo = source => source.Name == "NServiceBus.Extensions.Diagnostics",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity =>
+                {
+                    startCalled = true;
+                    activity.ShouldNotBeNull();
+                    activity.OperationName.ShouldBe(ActivityNames.OutgoingLogicalMessage);
+                },
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            var context = new TestableOutgoingLogicalMessageContext();
+
+            var behavior = new OutgoingLogicalMessageDiagnostics();
+
+            await behavior.Invoke(context, () => Task.CompletedTask);
+
+            startCalled.ShouldBeTrue();
         }
     }
 }

@@ -13,41 +13,32 @@ namespace NServiceBus.Extensions.Diagnostics
         private const string EventName = ActivityNames.OutgoingPhysicalMessage + ".Sent";
 
         public OutgoingPhysicalMessageDiagnostics(IActivityEnricher activityEnricher)
+            : this(new DiagnosticListener(ActivityNames.OutgoingPhysicalMessage), activityEnricher)
         {
-            _diagnosticListener = new DiagnosticListener(ActivityNames.OutgoingPhysicalMessage);
+        }
+
+        public OutgoingPhysicalMessageDiagnostics(DiagnosticListener diagnosticListener,
+            IActivityEnricher activityEnricher)
+        {
+            _diagnosticListener = diagnosticListener;
             _activityEnricher = activityEnricher;
         }
 
         public override async Task Invoke(IOutgoingPhysicalMessageContext context, Func<Task> next)
         {
-            using (var activity = StartActivity(context))
+            var activity = Activity.Current;
+            if (activity != null)
             {
-                if (activity != null)
-                {
-                    InjectHeaders(activity, context);
-                }
-
-                await next().ConfigureAwait(false);
-
-                if (_diagnosticListener.IsEnabled(EventName))
-                {
-                    _diagnosticListener.Write(EventName, context);
-                }
-            }
-        }
-
-        private Activity? StartActivity(IOutgoingPhysicalMessageContext context)
-        {
-            var activity = NServiceBusActivitySource.ActivitySource.StartActivity(ActivityNames.OutgoingPhysicalMessage, ActivityKind.Producer);
-
-            if (activity == null)
-            {
-                return activity;
+                _activityEnricher.Enrich(activity, context);
+                InjectHeaders(activity, context);
             }
 
-            _activityEnricher.Enrich(activity, context);
+            await next().ConfigureAwait(false);
 
-            return activity;
+            if (_diagnosticListener.IsEnabled(EventName))
+            {
+                _diagnosticListener.Write(EventName, context);
+            }
         }
 
         private static void InjectHeaders(Activity activity, IOutgoingPhysicalMessageContext context)
