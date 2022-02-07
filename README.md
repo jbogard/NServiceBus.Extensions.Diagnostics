@@ -15,9 +15,9 @@ The Diagnostics package exposes four different events from [behaviors](https://d
 
  - IIncomingPhysicalMessageContext
  - IIncomingLogicalMessageContext
- - IOutgoingPhysicalMessageContext
- - IOutgoingLogicalMessageContext
  - IInvokeHandlerContext
+ - IOutgoingLogicalMessageContext
+ - IOutgoingPhysicalMessageContext
  
 The Physical message variants include full Activity support. All diagnostics events pass through the corresponding [context object](https://docs.particular.net/nservicebus/pipeline/steps-stages-connectors) as its event argument.
  
