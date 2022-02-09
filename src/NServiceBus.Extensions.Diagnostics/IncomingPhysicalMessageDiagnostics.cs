@@ -82,8 +82,10 @@ namespace NServiceBus.Extensions.Diagnostics
 
             _activityEnricher.Enrich(activity, context);
 
-            foreach (var baggageItem in baggageItems)
+            // Iterate backwards to preserve order because Activity baggage is LIFO
+            for (var i = baggageItems.Count - 1; i >= 0; i--)
             {
+                var baggageItem = baggageItems[i];
                 activity.AddBaggage(baggageItem.Key, baggageItem.Value);
             }
 

@@ -1,7 +1,6 @@
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
-using NServiceBus.Pipeline;
-using NServiceBus.Settings;
 using NServiceBus.Testing;
 using Shouldly;
 using Xunit;
@@ -243,6 +242,50 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
             started.Baggage.ShouldContain(kvp => kvp.Key == "Key4" && kvp.Value == "value2");
             started.Baggage.ShouldNotContain(kvp => kvp.Key == "Key1");
             started.Baggage.ShouldNotContain(kvp => kvp.Key == "Key2");
+        }
+
+        [Fact]
+        public async Task Should_preserve_baggage_order()
+        {
+            // Generate an id we can use for the request id header (in the correct format)
+            using var dummy = new Activity("IncomingRequest");
+            dummy.Start();
+            var id = dummy.Id;
+            dummy.Stop();
+
+            Activity started = null;
+
+            using var listener = new ActivityListener
+            {
+                ShouldListenTo = source => source.Name == "NServiceBus.Extensions.Diagnostics",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+                ActivityStarted = activity => started = activity,
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            var context = new TestableIncomingPhysicalMessageContext
+            {
+                MessageHeaders =
+                {
+                    {"traceparent", id},
+                    {"Correlation-Context", "Key1=value1, Key2=value2"},
+                    {"baggage", "Key3=value1, Key4=value2, Key4=value3"}
+                }
+            };
+
+            var behavior = new IncomingPhysicalMessageDiagnostics(new FakeActivityEnricher());
+
+            await behavior.Invoke(context, () => Task.CompletedTask);
+
+            started.ShouldNotBeNull();
+            var startedBaggage = started.Baggage.ToList();
+            startedBaggage[0].Key.ShouldBe("Key3");
+            startedBaggage[0].Value.ShouldBe("value1");
+            startedBaggage[1].Key.ShouldBe("Key4");
+            startedBaggage[1].Value.ShouldBe("value2");
+            startedBaggage[2].Key.ShouldBe("Key4");
+            startedBaggage[2].Value.ShouldBe("value3");
+            startedBaggage.Count.ShouldBe(3);
         }
     }
 }
