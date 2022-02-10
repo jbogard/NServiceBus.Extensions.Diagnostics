@@ -64,3 +64,18 @@ settings.Set(new NServiceBus.Extensions.Diagnostics.InstrumentationOptions
 ```
 
 This will set a `messaging.message_payload` tag with the UTF8-decoded message body.
+
+### Enriching Activities
+
+To enrich an Activity in a behavior or handler, the current executing NServiceBus activity is set in a `ICurrentActivity` extension value. In a handler or behavior you may retrieve this value and modify the `Activity`:
+
+```csharp
+public Task Handle(Message message, IMessageHandlerContext context)
+{
+    var currentActivity = context.Extensions.Get<ICurrentActivity>();
+
+    currentActivity.Current?.AddBaggage("cart.operation.id", message.Id.ToString());
+
+    // rest of method
+}
+```

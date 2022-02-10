@@ -61,7 +61,7 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
         }
 
         [Fact]
-        public async Task Should_set_appropriate_headers()
+        public async Task Should_set_appropriate_headers_from_current_activity()
         {
             var context = new TestableOutgoingPhysicalMessageContext();
 
@@ -81,6 +81,26 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
 
             context.Headers.ShouldContain(kvp => kvp.Key == "traceparent" && kvp.Value == outerActivity.Id);
             context.Headers.ShouldContain(kvp => kvp.Key == "tracestate" && kvp.Value == outerActivity.TraceStateString);
+            context.Headers.ShouldContain(kvp => kvp.Key == "Correlation-Context" && kvp.Value == "Key2=Value2,Key1=Value1");
+            context.Headers.ShouldContain(kvp => kvp.Key == "baggage" && kvp.Value == "Key2=Value2,Key1=Value1");
+        }
+
+        [Fact]
+        public async Task Should_set_appropriate_headers()
+        {
+            var context = new TestableOutgoingPhysicalMessageContext();
+
+            var behavior = new OutgoingPhysicalMessageDiagnostics(new FakeActivityEnricher());
+
+            using var outerActivity = new Activity("Outer");
+            outerActivity.AddBaggage("Key1", "Value1");
+            outerActivity.AddBaggage("Key2", "Value2");
+            
+            using var currentActivity = new CurrentContextActivity(outerActivity);
+            context.Extensions.Set<ICurrentActivity>(currentActivity);
+
+            await behavior.Invoke(context, () => Task.CompletedTask);
+
             context.Headers.ShouldContain(kvp => kvp.Key == "Correlation-Context" && kvp.Value == "Key2=Value2,Key1=Value1");
             context.Headers.ShouldContain(kvp => kvp.Key == "baggage" && kvp.Value == "Key2=Value2,Key1=Value1");
         }

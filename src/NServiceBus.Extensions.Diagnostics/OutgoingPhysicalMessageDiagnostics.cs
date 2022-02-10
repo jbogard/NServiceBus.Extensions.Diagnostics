@@ -26,7 +26,10 @@ namespace NServiceBus.Extensions.Diagnostics
 
         public override async Task Invoke(IOutgoingPhysicalMessageContext context, Func<Task> next)
         {
-            var activity = Activity.Current;
+            var activity = context.Extensions.TryGet<ICurrentActivity>(out var currentActivity) 
+                ? currentActivity.Current 
+                : Activity.Current;
+
             if (activity != null)
             {
                 _activityEnricher.Enrich(activity, context);
