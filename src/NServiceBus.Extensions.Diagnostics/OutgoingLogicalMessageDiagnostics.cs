@@ -18,14 +18,24 @@ namespace NServiceBus.Extensions.Diagnostics
 
         public override async Task Invoke(IOutgoingLogicalMessageContext context, Func<Task> next)
         {
-            using (StartActivity())
-            {
-                await next().ConfigureAwait(false);
+            using var activity = StartActivity();
 
-                if (_diagnosticListener.IsEnabled(EventName))
-                {
-                    _diagnosticListener.Write(EventName, context);
-                }
+            using var currentContextActivity = new CurrentContextActivity(activity);
+
+            try
+            {
+                context.Extensions.Set<ICurrentActivity>(currentContextActivity);
+
+                await next().ConfigureAwait(false);
+            }
+            finally
+            {
+                context.Extensions.Remove<ICurrentActivity>();
+            }
+
+            if (_diagnosticListener.IsEnabled(EventName))
+            {
+                _diagnosticListener.Write(EventName, context);
             }
         }
 

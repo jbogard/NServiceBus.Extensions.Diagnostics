@@ -63,6 +63,36 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
         }
 
         [Fact]
+        public async Task Should_set_current_activity_in_context()
+        {
+            var context = new TestableIncomingPhysicalMessageContext();
+
+            using var listener = new ActivityListener
+            {
+                ShouldListenTo = source => source.Name == "NServiceBus.Extensions.Diagnostics",
+                Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            };
+            ActivitySource.AddActivityListener(listener);
+
+            var behavior = new IncomingPhysicalMessageDiagnostics(new FakeActivityEnricher());
+
+            var found = false;
+            var hasActivity = false;
+
+            await behavior.Invoke(context, () =>
+            {
+                found = context.Extensions.TryGet<ICurrentActivity>(out var currentActivity);
+                hasActivity = currentActivity?.Current != null;
+
+                return Task.CompletedTask;
+            });
+
+            found.ShouldBeTrue();
+            hasActivity.ShouldBeTrue();
+            context.Extensions.TryGet<ICurrentActivity>(out _).ShouldBeFalse();
+        }
+
+        [Fact]
         public async Task Should_start_and_log_activity()
         {
             var startCalled = false;
