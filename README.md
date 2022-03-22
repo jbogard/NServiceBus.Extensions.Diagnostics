@@ -79,3 +79,24 @@ public Task Handle(Message message, IMessageHandlerContext context)
     // rest of method
 }
 ```
+
+## Metrics Usage
+
+This package also optionally supports bridging [NServiceBus.Metrics](https://docs.particular.net/monitoring/metrics/) to [`System.Diagnostics.Metrics`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.metrics?view=net-6.0).
+
+It exposes the existing NServiceBus metrics with a [`Meter`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.metrics.meter?view=net-6.0) named `NServiceBus.Extensions.Diagnostics` and corresponding [`Counter`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.metrics.counter-1?view=net-6.0) and [`Histogram`](https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.metrics.histogram-1?view=net-6.0) instruments, using OpenTelemetry metrics instrument and attribute [semantic conventions](https://github.com/open-telemetry/opentelemetry-specification/tree/main/specification/metrics/semantic_conventions):
+
+| NServiceBus Probe Name | Instrument Name | Instrumentation Type |
+| -- | -- | -- |
+|`# of msgs successfully processed / sec` | `messaging.successes` | `Counter<long>` |
+|`# of msgs pulled from the input queue /sec` | `messaging.fetches`| `Counter<long>` |
+|`# of msgs failures / sec` | `messaging.failures`| `Counter<long>` |
+|`Critical Time` | `messaging.client_server.duration`| `Histogram<double>` |
+|`Processing Time` | `messaging.server.duration`| `Histogram<double>` |
+|`Retries` | `messaging.retries`| `Counter<long>` |
+
+Enable this feature, which also enables the `NServiceBus.Metrics` feature, in your endpoint configuration:
+
+```csharp
+endpointConfiguration.EnableFeature<DiagnosticsMetricsFeature>();
+```
