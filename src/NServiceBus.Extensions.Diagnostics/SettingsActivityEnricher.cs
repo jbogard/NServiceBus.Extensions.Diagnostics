@@ -15,11 +15,21 @@ namespace NServiceBus.Extensions.Diagnostics
     {
         private readonly ReadOnlySettings _settings;
         private readonly InstrumentationOptions _options;
+        private readonly (string key, string? value)[] _environmentTags;
 
         public SettingsActivityEnricher(ReadOnlySettings settings)
         {
             _settings = settings;
             _options = settings.Get<InstrumentationOptions>();
+
+            var transportDefinition = _settings.Get<TransportDefinition>();
+
+            _environmentTags = new[]
+            {
+                ("messaging.system", transportDefinition.GetType().Name.Replace("Transport", null).ToLowerInvariant()),
+                ("net.host.name", Dns.GetHostName()),
+                ("net.host.ip", IpAddressResolver.Value),
+            };
         }
 
         public void Enrich(Activity activity, IIncomingPhysicalMessageContext context)
@@ -40,8 +50,7 @@ namespace NServiceBus.Extensions.Diagnostics
                 activity.AddTag("messaging.message_payload", Encoding.UTF8.GetString(context.Message.Body));
             }
 
-            activity.AddTag("net.host.name", Environment.MachineName);
-            activity.AddTag("net.host.ip", Dns.GetHostName());
+            AddEnvironmentTags(activity);
         }
 
         public void Enrich(Activity activity, IOutgoingPhysicalMessageContext context)
@@ -72,15 +81,10 @@ namespace NServiceBus.Extensions.Diagnostics
             {
                 activity.AddTag("messaging.message_payload", Encoding.UTF8.GetString(context.Body));
             }
-
-            activity.AddTag("net.host.name", Environment.MachineName);
-            activity.AddTag("net.host.ip", Dns.GetHostName());
         }
 
         private void Enrich(Activity activity, IReadOnlyDictionary<string, string> contextHeaders)
         {
-            var transportDefinition = _settings.Get<TransportDefinition>();
-            activity.AddTag("messaging.system", transportDefinition.GetType().Name.Replace("Transport", null).ToLowerInvariant());
             if (contextHeaders.TryGetValue(NServiceBus.Headers.ConversationId, out var conversationId))
             {
                 activity.AddTag("messaging.conversation_id", conversationId);
@@ -102,6 +106,14 @@ namespace NServiceBus.Extensions.Diagnostics
             foreach (var header in contextHeaders.Where(header => header.Key.StartsWith("NServiceBus.")))
             {
                 activity.AddTag($"messaging.{header.Key.ToLowerInvariant()}", header.Value);
+            }
+        }
+
+        private void AddEnvironmentTags(Activity activity)
+        {
+            foreach (var (key, value) in _environmentTags)
+            {
+                activity.AddTag(key, value);
             }
         }
         

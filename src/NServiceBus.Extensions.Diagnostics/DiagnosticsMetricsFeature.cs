@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Net;
+using System.Net.Sockets;
 using System.Reflection;
 using NServiceBus.Features;
 using NServiceBus.Transport;
@@ -69,11 +70,12 @@ public class DiagnosticsMetricsFeature : Feature
                     new KeyValuePair<string, object?>("messaging.destination", settings.LocalAddress()),
                     new KeyValuePair<string, object?>("messaging.destination.endpoint", settings.EndpointName()),
                     new KeyValuePair<string, object?>("messaging.destination.discriminator", discriminator),
-                    new KeyValuePair<string, object?>("net.host.name", Environment.MachineName),
-                    new KeyValuePair<string, object?>("net.host.ip", Dns.GetHostName())
+                    new KeyValuePair<string, object?>("net.host.name", Dns.GetHostName()),
+                    new KeyValuePair<string, object?>("net.host.ip", IpAddressResolver.Value)
                 });
             });
     }
+
 
     private void RegisterProbes(ProbeContext context, KeyValuePair<string, object?>[] tags)
     {
