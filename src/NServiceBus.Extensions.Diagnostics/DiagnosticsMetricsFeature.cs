@@ -17,17 +17,17 @@ public class DiagnosticsMetricsFeature : Feature
     private static readonly Meter NServiceBusMeter = new(InstrumentationName, InstrumentationVersion);
 
     private static readonly Counter<long> SuccessTotalCounter =
-        NServiceBusMeter.CreateCounter<long>("messaging.successes");
+        NServiceBusMeter.CreateCounter<long>("messaging.successes", "Total messages processed successfully by the transport.");
     private static readonly Counter<long> FetchedTotalCounter =
-        NServiceBusMeter.CreateCounter<long>("messaging.fetches");
+        NServiceBusMeter.CreateCounter<long>("messaging.fetches", "Total messages fetched from the input queue by the transport.");
     private static readonly Counter<long> FailureTotalCounter =
-        NServiceBusMeter.CreateCounter<long>("messaging.failures");
+        NServiceBusMeter.CreateCounter<long>("messaging.failures", "Total messages processed unsuccessfully by the transport.");
     private static readonly Histogram<double> CriticalTimeSecondsHistogram =
-        NServiceBusMeter.CreateHistogram<double>("messaging.client_server.duration", "ms", "Lead time");
+        NServiceBusMeter.CreateHistogram<double>("messaging.client_server.duration", "ms", "The duration from sending to processing the message. Also known as lead time.");
     private static readonly Histogram<double> ProcessingTimeSecondsHistogram =
-        NServiceBusMeter.CreateHistogram<double>("messaging.server.duration", "ms", "Cycle or processing time");
+        NServiceBusMeter.CreateHistogram<double>("messaging.server.duration", "ms", "The duration to successfully process a message. Also known as cycle or processing time.");
     private static readonly Counter<long> RetriesTotalCounter =
-        NServiceBusMeter.CreateCounter<long>("messaging.retries");
+        NServiceBusMeter.CreateCounter<long>("messaging.retries", null, "Total messages scheduled for retry (FLR or SLR).");
 
     private MetricsOptions? _metricsOptions;
 
