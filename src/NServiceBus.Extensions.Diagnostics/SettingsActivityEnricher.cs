@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Net;
 using System.Text;
 using NServiceBus.Pipeline;
 using NServiceBus.Routing;
@@ -38,6 +39,9 @@ namespace NServiceBus.Extensions.Diagnostics
             {
                 activity.AddTag("messaging.message_payload", Encoding.UTF8.GetString(context.Message.Body));
             }
+
+            activity.AddTag("net.host.name", Environment.MachineName);
+            activity.AddTag("net.host.ip", Dns.GetHostName());
         }
 
         public void Enrich(Activity activity, IOutgoingPhysicalMessageContext context)
@@ -68,6 +72,9 @@ namespace NServiceBus.Extensions.Diagnostics
             {
                 activity.AddTag("messaging.message_payload", Encoding.UTF8.GetString(context.Body));
             }
+
+            activity.AddTag("net.host.name", Environment.MachineName);
+            activity.AddTag("net.host.ip", Dns.GetHostName());
         }
 
         private void Enrich(Activity activity, IReadOnlyDictionary<string, string> contextHeaders)
