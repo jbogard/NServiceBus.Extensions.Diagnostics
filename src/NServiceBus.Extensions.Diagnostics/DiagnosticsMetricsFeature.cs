@@ -87,7 +87,7 @@ public class DiagnosticsMetricsFeature : Feature
             }
             var counter = DurationMapping[duration.Name];
 
-            duration.Register((ref DurationEvent @event) => counter.Record(@event.Duration.TotalSeconds, tags));
+            duration.Register((ref DurationEvent @event) => counter.Record(@event.Duration.TotalMilliseconds, tags));
         }
 
         foreach (var signal in context.Signals)
