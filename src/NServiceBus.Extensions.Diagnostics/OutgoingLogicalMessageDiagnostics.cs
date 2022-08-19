@@ -41,7 +41,18 @@ namespace NServiceBus.Extensions.Diagnostics
 
         private static Activity? StartActivity()
         {
-            var activity = NServiceBusActivitySource.ActivitySource.StartActivity(ActivityNames.OutgoingLogicalMessage, ActivityKind.Producer);
+            Activity? activity = null;
+            if (NServiceBusActivitySource.ActivitySource.HasListeners())
+            {
+                activity = NServiceBusActivitySource.ActivitySource.CreateActivity(ActivityNames.OutgoingLogicalMessage, ActivityKind.Client);
+            }
+
+            if (activity is null && Activity.Current is not null)
+            {
+                activity = new Activity(ActivityNames.OutgoingLogicalMessage);
+            }
+
+            activity?.Start();
             return activity;
         }
     }
