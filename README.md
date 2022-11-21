@@ -1,4 +1,4 @@
-* This repo is no longer maintained. All of its functionality is now present in [NServiceBus OTel](https://docs.particular.net/nservicebus/operations/opentelemetry) support. *
+**This repo is no longer maintained. All of its functionality is now present in [NServiceBus OTel](https://docs.particular.net/nservicebus/operations/opentelemetry) support.**
 
 # NServiceBus.Extensions.Diagnostics
 
