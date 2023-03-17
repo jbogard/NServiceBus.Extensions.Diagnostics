@@ -83,6 +83,13 @@ namespace NServiceBus.Extensions.Diagnostics
                 ? NServiceBusActivitySource.ActivitySource.StartActivity(ActivityNames.IncomingPhysicalMessage, ActivityKind.Consumer)
                 : NServiceBusActivitySource.ActivitySource.StartActivity(ActivityNames.IncomingPhysicalMessage, ActivityKind.Consumer, parentId);
 
+            if (activity == null && ActivityContext.TryParse(parentId, traceStateString, out var activityContext))
+            {
+                activity = new Activity(ActivityNames.IncomingPhysicalMessage);
+                activity.SetParentId(activityContext.TraceId, activityContext.SpanId, activityContext.TraceFlags);
+                activity.Start();
+            }
+
             if (activity == null)
             {
                 return activity;

@@ -73,6 +73,7 @@ namespace NServiceBus.Extensions.Diagnostics.Tests
             };
             outerActivity.AddBaggage("Key1", "Value1");
             outerActivity.AddBaggage("Key2", "Value2");
+            context.Extensions.Set<ICurrentActivity>(new CurrentContextActivity(outerActivity));
             outerActivity.Start();
 
             await behavior.Invoke(context, () => Task.CompletedTask);
